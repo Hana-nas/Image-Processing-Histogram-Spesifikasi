@@ -20,7 +20,8 @@ from werkzeug.utils import secure_filename
 # ──────────────────────────────────────────────────────────────
 #  Konfigurasi Aplikasi Flask
 # ──────────────────────────────────────────────────────────────
-app = Flask(__name__)
+BASE_DIR = os.path.dirname(__file__)
+app = Flask(__name__, template_folder=BASE_DIR, static_folder=BASE_DIR)
 
 # Folder untuk menyimpan file yang diupload
 UPLOAD_FOLDER = os.path.join(os.path.dirname(__file__), 'uploads')
@@ -259,8 +260,8 @@ def plot_histograms(src_img: np.ndarray,
 
 @app.route('/')
 def index():
-    """Halaman utama — render template HTML."""
-    return render_template('index.html')
+    """Halaman utama — sajikan index.html dari root folder."""
+    return send_from_directory(BASE_DIR, 'index.html')
 
 
 @app.route('/process', methods=['POST'])
