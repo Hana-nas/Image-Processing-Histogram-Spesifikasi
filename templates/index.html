@@ -1,0 +1,1244 @@
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Histogram Spesifikasi | Pengolahan Citra</title>
+  <meta name="description"
+    content="Aplikasi web pengolahan citra berbasis Histogram Matching menggunakan Flask, OpenCV, dan NumPy." />
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
+    rel="stylesheet" />
+
+  <style>
+    /* ══════════════════════════════════════════════════
+       DESIGN TOKENS & RESET
+    ══════════════════════════════════════════════════ */
+    :root {
+      --bg-base: #0d0f1a;
+      --bg-card: #141626;
+      --bg-card2: #1a1d30;
+      --bg-input: #0f1120;
+      --accent: #6c63ff;
+      --accent2: #4ecdc4;
+      --accent3: #f7b731;
+      --success: #2ecc71;
+      --danger: #e74c3c;
+      --text-main: #e8eaf6;
+      --text-sub: #9097b8;
+      --text-dim: #555e80;
+      --border: #252840;
+      --border2: #2e3254;
+      --radius-sm: 8px;
+      --radius: 14px;
+      --radius-lg: 20px;
+      --shadow: 0 8px 32px rgba(0, 0, 0, .45);
+      --shadow-sm: 0 2px 12px rgba(0, 0, 0, .3);
+      --font: 'Inter', sans-serif;
+      --mono: 'JetBrains Mono', monospace;
+      --trans: all .25s ease;
+    }
+
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body {
+      font-family: var(--font);
+      background: var(--bg-base);
+      color: var(--text-main);
+      min-height: 100vh;
+      line-height: 1.6;
+    }
+
+    img {
+      max-width: 100%;
+      display: block;
+    }
+
+    /* ══════════════════════════════════════════════════
+       SCROLLBAR CUSTOM
+    ══════════════════════════════════════════════════ */
+    ::-webkit-scrollbar {
+      width: 6px;
+    }
+
+    ::-webkit-scrollbar-track {
+      background: var(--bg-base);
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: var(--border2);
+      border-radius: 99px;
+    }
+
+    /* ══════════════════════════════════════════════════
+       HEADER / HERO
+    ══════════════════════════════════════════════════ */
+    header {
+      background: linear-gradient(135deg, #0d0f1a 0%, #1a1040 50%, #0d1a1a 100%);
+      border-bottom: 1px solid var(--border);
+      padding: 2.5rem 1.5rem 2rem;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+
+    header::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(ellipse 80% 60% at 50% -20%, rgba(108, 99, 255, .18) 0%, transparent 70%);
+      pointer-events: none;
+    }
+
+    .header-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: .5rem;
+      background: rgba(108, 99, 255, .12);
+      border: 1px solid rgba(108, 99, 255, .35);
+      color: #a89cff;
+      font-size: .75rem;
+      font-weight: 600;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      padding: .3rem .9rem;
+      border-radius: 99px;
+      margin-bottom: 1rem;
+    }
+
+    header h1 {
+      font-size: clamp(1.6rem, 4vw, 2.5rem);
+      font-weight: 700;
+      background: linear-gradient(90deg, #e8eaf6 30%, #a89cff 70%, #4ecdc4);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin-bottom: .5rem;
+    }
+
+    header p {
+      color: var(--text-sub);
+      font-size: .95rem;
+      max-width: 540px;
+      margin: 0 auto;
+    }
+
+    /* ══════════════════════════════════════════════════
+       MAIN LAYOUT
+    ══════════════════════════════════════════════════ */
+    main {
+      max-width: 1100px;
+      margin: 2.5rem auto;
+      padding: 0 1.25rem 4rem;
+      display: flex;
+      flex-direction: column;
+      gap: 2rem;
+    }
+
+    /* ══════════════════════════════════════════════════
+       CARD
+    ══════════════════════════════════════════════════ */
+    .card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 2rem;
+      box-shadow: var(--shadow);
+    }
+
+    .card-title {
+      font-size: 1rem;
+      font-weight: 600;
+      color: var(--text-main);
+      margin-bottom: 1.5rem;
+      display: flex;
+      align-items: center;
+      gap: .6rem;
+    }
+
+    .card-title .icon {
+      width: 30px;
+      height: 30px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1rem;
+    }
+
+    .icon-purple {
+      background: rgba(108, 99, 255, .18);
+    }
+
+    .icon-teal {
+      background: rgba(78, 205, 196, .18);
+    }
+
+    .icon-amber {
+      background: rgba(247, 183, 49, .18);
+    }
+
+    /* ══════════════════════════════════════════════════
+       UPLOAD ZONE
+    ══════════════════════════════════════════════════ */
+    .upload-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.25rem;
+    }
+
+    @media (max-width: 640px) {
+      .upload-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .upload-zone {
+      border: 2px dashed var(--border2);
+      border-radius: var(--radius);
+      padding: 1.5rem;
+      cursor: pointer;
+      transition: var(--trans);
+      background: var(--bg-input);
+      position: relative;
+      text-align: center;
+    }
+
+    .upload-zone:hover,
+    .upload-zone.drag-over {
+      border-color: var(--accent);
+      background: rgba(108, 99, 255, .05);
+    }
+
+    .upload-zone input[type="file"] {
+      position: absolute;
+      inset: 0;
+      opacity: 0;
+      cursor: pointer;
+      width: 100%;
+      height: 100%;
+      z-index: 2;
+    }
+
+    .upload-zone > :not(input[type="file"]) {
+      position: relative;
+      z-index: 1;
+      pointer-events: none;
+    }
+
+    .upload-zone .zone-icon {
+      font-size: 2.5rem;
+      margin-bottom: .75rem;
+      display: block;
+      line-height: 1;
+    }
+
+    .upload-zone .zone-label {
+      font-weight: 600;
+      font-size: .9rem;
+      color: var(--text-main);
+      margin-bottom: .3rem;
+    }
+
+    .upload-zone .zone-sub {
+      font-size: .78rem;
+      color: var(--text-sub);
+    }
+
+    .upload-zone .zone-badge {
+      display: inline-block;
+      margin-top: .6rem;
+      background: rgba(108, 99, 255, .15);
+      color: #a89cff;
+      font-size: .72rem;
+      padding: .15rem .6rem;
+      border-radius: 99px;
+      border: 1px solid rgba(108, 99, 255, .25);
+    }
+
+    /* Preview thumbnail (muncul setelah pilih file) */
+    .preview-thumb {
+      width: 100%;
+      max-height: 160px;
+      object-fit: contain;
+      border-radius: var(--radius-sm);
+      margin-top: 1rem;
+      border: 1px solid var(--border2);
+      background: #0a0c15;
+    }
+
+    .preview-thumb.hidden {
+      display: none;
+    }
+
+    /* ══════════════════════════════════════════════════
+       TOMBOL
+    ══════════════════════════════════════════════════ */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: .5rem;
+      padding: .7rem 1.6rem;
+      border-radius: var(--radius-sm);
+      font-family: var(--font);
+      font-size: .9rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: var(--trans);
+      border: none;
+      text-decoration: none;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, var(--accent), #4f46e5);
+      color: #fff;
+      box-shadow: 0 4px 20px rgba(108, 99, 255, .4);
+    }
+
+    .btn-primary:hover:not(:disabled) {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 28px rgba(108, 99, 255, .55);
+    }
+
+    .btn-primary:disabled {
+      opacity: .4;
+      cursor: not-allowed;
+    }
+
+    .btn-success {
+      background: linear-gradient(135deg, #27ae60, #1e8449);
+      color: #fff;
+      box-shadow: 0 4px 16px rgba(46, 204, 113, .3);
+    }
+
+    .btn-success:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 22px rgba(46, 204, 113, .45);
+    }
+
+    .btn-row {
+      display: flex;
+      gap: 1rem;
+      flex-wrap: wrap;
+      align-items: center;
+      margin-top: 1.5rem;
+    }
+
+    /* ══════════════════════════════════════════════════
+       LOADING SPINNER
+    ══════════════════════════════════════════════════ */
+    .spinner-wrap {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      gap: 1rem;
+      padding: 2.5rem 0;
+      color: var(--text-sub);
+      font-size: .9rem;
+    }
+
+    .spinner-wrap.show {
+      display: flex;
+    }
+
+    .spinner {
+      width: 44px;
+      height: 44px;
+      border: 3px solid var(--border);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin .8s linear infinite;
+    }
+
+    @keyframes spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+    /* ══════════════════════════════════════════════════
+       RESULT SECTION
+    ══════════════════════════════════════════════════ */
+    #result-section {
+      display: none;
+    }
+
+    #result-section.show {
+      display: block;
+    }
+
+    .images-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1.25rem;
+    }
+
+    @media (max-width: 768px) {
+      .images-grid {
+        grid-template-columns: 1fr 1fr;
+      }
+    }
+
+    @media (max-width: 500px) {
+      .images-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .image-card {
+      background: var(--bg-card2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+      transition: var(--trans);
+    }
+
+    .image-card:hover {
+      border-color: var(--border2);
+      transform: translateY(-3px);
+      box-shadow: var(--shadow-sm);
+    }
+
+    .image-card img {
+      width: 100%;
+      height: 200px;
+      object-fit: contain;
+      background: #0a0c15;
+    }
+
+    .image-card-label {
+      padding: .7rem 1rem;
+      font-size: .8rem;
+      font-weight: 600;
+      color: var(--text-sub);
+      letter-spacing: .04em;
+      text-transform: uppercase;
+      display: flex;
+      align-items: center;
+      gap: .4rem;
+    }
+
+    .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    .dot-purple {
+      background: var(--accent);
+    }
+
+    .dot-teal {
+      background: var(--accent2);
+    }
+
+    .dot-amber {
+      background: var(--accent3);
+    }
+
+    /* ══════════════════════════════════════════════════
+       INFO STATS
+    ══════════════════════════════════════════════════ */
+    .stats-row {
+      display: flex;
+      gap: 1rem;
+      flex-wrap: wrap;
+      margin-top: 1.5rem;
+    }
+
+    .stat-pill {
+      background: var(--bg-card2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: .55rem 1rem;
+      font-size: .8rem;
+      color: var(--text-sub);
+      font-family: var(--mono);
+    }
+
+    .stat-pill span {
+      color: var(--accent2);
+      font-weight: 600;
+    }
+
+    /* ══════════════════════════════════════════════════
+       HISTOGRAM PLOT
+    ══════════════════════════════════════════════════ */
+    #hist-img {
+      width: 100%;
+      border-radius: var(--radius);
+      border: 1px solid var(--border);
+    }
+
+    /* ══════════════════════════════════════════════════
+       STEP GUIDE (cara kerja algoritma)
+    ══════════════════════════════════════════════════ */
+    .steps {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 1rem;
+      margin-top: 1.5rem;
+    }
+
+    .step-item {
+      background: var(--bg-card2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1.1rem;
+    }
+
+    .step-num {
+      font-family: var(--mono);
+      font-size: .7rem;
+      font-weight: 700;
+      color: var(--accent);
+      letter-spacing: .1em;
+      text-transform: uppercase;
+      margin-bottom: .5rem;
+    }
+
+    .step-title {
+      font-weight: 600;
+      font-size: .85rem;
+      margin-bottom: .35rem;
+    }
+
+    .step-desc {
+      font-size: .78rem;
+      color: var(--text-sub);
+      line-height: 1.5;
+    }
+
+    /* ══════════════════════════════════════════════════
+       ALERT / ERROR
+    ══════════════════════════════════════════════════ */
+    .alert {
+      padding: .9rem 1.2rem;
+      border-radius: var(--radius-sm);
+      font-size: .875rem;
+      display: none;
+      align-items: center;
+      gap: .6rem;
+      margin-top: 1rem;
+    }
+
+    .alert.show {
+      display: flex;
+    }
+
+    .alert-error {
+      background: rgba(231, 76, 60, .12);
+      border: 1px solid rgba(231, 76, 60, .3);
+      color: #f28b82;
+    }
+
+    /* ══════════════════════════════════════════════════
+       FOOTER
+    ══════════════════════════════════════════════════ */
+    footer {
+      text-align: center;
+      padding: 1.5rem;
+      font-size: .78rem;
+      color: var(--text-dim);
+      border-top: 1px solid var(--border);
+    }
+
+    /* ══════════════════════════════════════════════════
+       MODAL LANGKAH-LANGKAH
+    ══════════════════════════════════════════════════ */
+    .modal-overlay {
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0, 0, 0, 0.75);
+      backdrop-filter: blur(4px);
+      z-index: 1000;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 1rem;
+    }
+    .modal-overlay.show { display: flex; }
+    
+    .modal-content {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      width: 100%;
+      max-width: 900px;
+      max-height: 90vh;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.6);
+      animation: modalFadeIn 0.3s ease;
+    }
+    @keyframes modalFadeIn {
+      from { opacity: 0; transform: translateY(20px) scale(0.98); }
+      to { opacity: 1; transform: translateY(0) scale(1); }
+    }
+    .modal-header {
+      padding: 1.5rem 2rem;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .modal-header h2 { font-size: 1.25rem; font-weight: 700; color: var(--text-main); }
+    .btn-close {
+      background: rgba(255,255,255,0.05);
+      border: 1px solid var(--border2);
+      color: var(--text-sub);
+      width: 36px; height: 36px;
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer; transition: var(--trans);
+    }
+    .btn-close:hover { background: var(--danger); color: white; border-color: var(--danger); }
+    .modal-body {
+      padding: 2rem;
+      overflow-y: auto;
+      flex: 1;
+    }
+    
+    /* Tabel Langkah-Langkah */
+    .table-responsive {
+      overflow-x: auto;
+      background: var(--bg-card2);
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border2);
+      margin-bottom: 2rem;
+    }
+    .steps-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.85rem;
+      text-align: right;
+    }
+    .steps-table th, .steps-table td {
+      padding: 0.6rem 1rem;
+      border-bottom: 1px solid var(--border2);
+    }
+    .steps-table th {
+      background: rgba(0,0,0,0.2);
+      color: var(--text-sub);
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      font-size: 0.75rem;
+      position: sticky; top: 0;
+      border-bottom: 2px solid var(--border);
+    }
+    .steps-table td:first-child, .steps-table th:first-child { text-align: left; }
+    .steps-table tr:hover { background: rgba(108, 99, 255, 0.05); }
+    
+    .math-text { font-family: var(--mono); color: var(--accent2); }
+    .mapping-arrow { color: var(--accent); font-weight: bold; margin: 0 0.5rem; }
+  </style>
+</head>
+
+<body>
+
+  <!-- ══════════════════════════════════════════════════
+       HEADER
+  ══════════════════════════════════════════════════ -->
+  <header>
+    <div class="header-badge">🎨 Pengolahan Citra Digital</div>
+    <h1>Histogram Spesifikasi</h1>
+   
+  </header>
+
+  <!-- ══════════════════════════════════════════════════
+       MAIN
+  ══════════════════════════════════════════════════ -->
+  <main>
+
+    <!-- ── Upload Form ────────────────────────────────── -->
+    <div class="card">
+      <div class="card-title">
+        <div class="icon icon-teal">📁</div>
+        Upload Gambar
+      </div>
+
+      <form id="upload-form" enctype="multipart/form-data">
+        <div class="upload-grid">
+
+          <!-- Gambar Input -->
+          <div>
+            <p
+              style="font-size:.82rem; color:var(--text-sub); margin-bottom:.6rem; font-weight:600; text-transform:uppercase; letter-spacing:.05em;">
+              🖼️ Gambar Input
+            </p>
+            <div class="upload-zone" id="zone-input" ondragover="handleDragOver(event,'zone-input')"
+              ondragleave="handleDragLeave('zone-input')" ondrop="handleDrop(event,'input_image','prev-input')">
+              <input type="file" id="input_image" name="input_image" accept="image/*" required
+                onchange="previewImage(this,'prev-input')" />
+              <span class="zone-icon">🗂️</span>
+              <div class="zone-label">Pilih atau seret gambar</div>
+              <div class="zone-sub">PNG, JPG, BMP, TIFF — maks 16 MB</div>
+              <span class="zone-badge">Gambar yang akan diproses</span>
+              <img id="prev-input" class="preview-thumb hidden" alt="Preview Input" />
+            </div>
+          </div>
+
+          <!-- Gambar Referensi -->
+          <div>
+            <p
+              style="font-size:.82rem; color:var(--text-sub); margin-bottom:.6rem; font-weight:600; text-transform:uppercase; letter-spacing:.05em;">
+              🎯 Gambar Referensi
+            </p>
+            <div class="upload-zone" id="zone-ref" ondragover="handleDragOver(event,'zone-ref')"
+              ondragleave="handleDragLeave('zone-ref')" ondrop="handleDrop(event,'ref_image','prev-ref')">
+              <input type="file" id="ref_image" name="ref_image" accept="image/*" required
+                onchange="previewImage(this,'prev-ref')" />
+              <span class="zone-icon">🎨</span>
+              <div class="zone-label">Pilih atau seret gambar</div>
+              <div class="zone-sub">PNG, JPG, BMP, TIFF — maks 16 MB</div>
+              <span class="zone-badge">Target distribusi histogram</span>
+              <img id="prev-ref" class="preview-thumb hidden" alt="Preview Referensi" />
+            </div>
+          </div>
+
+        </div><!-- end .upload-grid -->
+
+        <!-- Error Alert -->
+        <div class="alert alert-error" id="error-alert">
+          <span>⚠️</span>
+          <span id="error-text"></span>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="btn-row">
+          <button type="submit" class="btn btn-primary" id="process-btn" disabled>
+            ⚡ Proses Histogram Matching
+          </button>
+          <button type="button" class="btn" id="reset-btn" onclick="resetForm()"
+            style="background:var(--bg-card2); border:1px solid var(--border2); color:var(--text-sub);">
+            🔄 Reset
+          </button>
+        </div>
+
+        <!-- Spinner -->
+        <div class="spinner-wrap" id="spinner">
+          <div class="spinner"></div>
+          <span>Memproses histogram matching…</span>
+        </div>
+
+      </form>
+    </div><!-- end upload card -->
+
+    <!-- ── Hasil Proses ───────────────────────────────── -->
+    <section id="result-section">
+
+      <!-- Perbandingan Gambar -->
+      <div class="card">
+        <div class="card-title">
+          <div class="icon icon-amber">🖼️</div>
+          Perbandingan Gambar
+        </div>
+
+        <div class="images-grid">
+
+          <!-- Input -->
+          <div class="image-card">
+            <img id="img-input" src="" alt="Gambar Input" />
+            <div class="image-card-label">
+              <span class="dot dot-purple"></span>
+              Gambar Input
+            </div>
+          </div>
+
+          <!-- Referensi -->
+          <div class="image-card">
+            <img id="img-ref" src="" alt="Gambar Referensi" />
+            <div class="image-card-label">
+              <span class="dot dot-teal"></span>
+              Gambar Referensi
+            </div>
+          </div>
+
+          <!-- Hasil -->
+          <div class="image-card">
+            <img id="img-result" src="" alt="Gambar Hasil" />
+            <div class="image-card-label">
+              <span class="dot dot-amber"></span>
+              Hasil Matching
+            </div>
+          </div>
+
+        </div><!-- end .images-grid -->
+
+        <!-- Info Stats -->
+        <div class="stats-row" id="stats-row"></div>
+
+        <!-- Download Button -->
+        <div class="btn-row">
+          <button type="button" id="btn-show-steps" class="btn btn-primary" onclick="openStepsModal()">
+            📑 Lihat Langkah-Langkah
+          </button>
+          <a id="download-btn" class="btn btn-success" href="#" download="hasil_histogram_matching.png">
+            ⬇️ Download Hasil
+          </a>
+        </div>
+      </div>
+
+      <!-- Histogram Plot -->
+      <div class="card">
+        <div class="card-title">
+          <div class="icon icon-purple">📊</div>
+          Visualisasi Histogram
+        </div>
+        <img id="hist-img" src="" alt="Histogram Chart" />
+      </div>
+
+    </section><!-- end result-section -->
+
+  </main>
+
+  <!-- ══════════════════════════════════════════════════
+       MODAL LANGKAH-LANGKAH
+  ══════════════════════════════════════════════════ -->
+  <div class="modal-overlay" id="steps-modal" onclick="if(event.target===this) closeStepsModal()">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>📑 Langkah-Langkah Histogram Spesifikasi</h2>
+        <button class="btn-close" onclick="closeStepsModal()">✕</button>
+      </div>
+      <div class="modal-body" id="modal-body-content">
+        <!-- Konten di-generate oleh JS -->
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════
+       FOOTER
+  ══════════════════════════════════════════════════ -->
+  <footer>
+    Histogram Spesifikasi · Flask + OpenCV + NumPy + Matplotlib
+  </footer>
+
+  <!-- ══════════════════════════════════════════════════
+       JAVASCRIPT
+  ══════════════════════════════════════════════════ -->
+  <script>
+    /*
+     * ─────────────────────────────────────────────────
+     *  Utilitas Umum
+     * ─────────────────────────────────────────────────
+     */
+
+    // Referensi elemen DOM yang sering dipakai
+    const form = document.getElementById('upload-form');
+    const processBtn = document.getElementById('process-btn');
+    const spinner = document.getElementById('spinner');
+    const resultSec = document.getElementById('result-section');
+    const errorAlert = document.getElementById('error-alert');
+    const errorText = document.getElementById('error-text');
+
+    // Variabel Global untuk menyimpan data langkah-langkah
+    let currentStepsData = null;
+
+    /**
+     * Tampilkan pesan error pada alert box.
+     * @param {string} msg - Pesan error yang akan ditampilkan.
+     */
+    function showError(msg) {
+      errorText.textContent = msg;
+      errorAlert.classList.add('show');
+    }
+
+    /** Sembunyikan alert error. */
+    function hideError() {
+      errorAlert.classList.remove('show');
+    }
+
+    /*
+     * ─────────────────────────────────────────────────
+     *  Preview Gambar (sebelum upload)
+     * ─────────────────────────────────────────────────
+     */
+
+    /**
+     * Tampilkan thumbnail preview gambar yang dipilih dari input file.
+     * @param {HTMLInputElement} input  - Elemen input file.
+     * @param {string}           imgId - ID elemen <img> untuk preview.
+     */
+    function previewImage(input, imgId) {
+      const img = document.getElementById(imgId);
+      const file = input.files[0];
+
+      if (!file) { img.classList.add('hidden'); return; }
+
+      // Gunakan FileReader API untuk membaca file secara lokal
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        img.src = e.target.result;
+        img.classList.remove('hidden');
+      };
+      reader.readAsDataURL(file);
+
+      // Aktifkan tombol proses jika kedua gambar sudah dipilih
+      updateProcessBtn();
+    }
+
+    // Pastikan tombol proses mengikuti status file meskipun file dipilih lewat dialog
+    document.getElementById('input_image').addEventListener('change', () => updateProcessBtn());
+    document.getElementById('ref_image').addEventListener('change', () => updateProcessBtn());
+
+    /**
+     * Aktifkan/nonaktifkan tombol proses berdasarkan ketersediaan file.
+     */
+    function updateProcessBtn() {
+      const hasInput = document.getElementById('input_image').files.length > 0;
+      const hasRef = document.getElementById('ref_image').files.length > 0;
+      processBtn.disabled = !(hasInput && hasRef);
+    }
+
+    /*
+     * ─────────────────────────────────────────────────
+     *  Drag & Drop
+     * ─────────────────────────────────────────────────
+     */
+
+    function handleDragOver(e, zoneId) {
+      e.preventDefault();
+      document.getElementById(zoneId).classList.add('drag-over');
+    }
+
+    function handleDragLeave(zoneId) {
+      document.getElementById(zoneId).classList.remove('drag-over');
+    }
+
+    /**
+     * Handle drop event — isi input file dengan file yang di-drop.
+     * @param {DragEvent} e      - Event drop.
+     * @param {string}  inputId  - ID elemen <input type="file">.
+     * @param {string}  prevId   - ID elemen <img> preview.
+     */
+    function handleDrop(e, inputId, prevId) {
+      e.preventDefault();
+      const zoneId = e.currentTarget.id;
+      document.getElementById(zoneId).classList.remove('drag-over');
+
+      const file = e.dataTransfer.files[0];
+      if (!file) return;
+
+      // Isi input file secara programatis
+      const input = document.getElementById(inputId);
+      const dataTransfer = new DataTransfer();
+      dataTransfer.items.add(file);
+      input.files = dataTransfer.files;
+
+      previewImage(input, prevId);
+    }
+
+    /*
+     * ─────────────────────────────────────────────────
+     *  Reset Form
+     * ─────────────────────────────────────────────────
+     */
+
+    function resetForm() {
+      form.reset();
+      ['prev-input', 'prev-ref'].forEach(id => {
+        const el = document.getElementById(id);
+        el.src = '';
+        el.classList.add('hidden');
+      });
+      processBtn.disabled = true;
+      resultSec.classList.remove('show');
+      hideError();
+      currentStepsData = null;
+    }
+
+    /*
+     * ─────────────────────────────────────────────────
+     *  Submit Form → Kirim ke Backend
+     * ─────────────────────────────────────────────────
+     */
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();  // Cegah reload halaman
+      hideError();
+
+      // Validasi file
+      const inputFile = document.getElementById('input_image').files[0];
+      const refFile = document.getElementById('ref_image').files[0];
+
+      if (!inputFile || !refFile) {
+        showError('Harap pilih kedua gambar terlebih dahulu.');
+        return;
+      }
+
+      // Tampilkan spinner, sembunyikan hasil lama
+      spinner.classList.add('show');
+      resultSec.classList.remove('show');
+      processBtn.disabled = true;
+
+      try {
+        // Kirim data sebagai multipart/form-data
+        const formData = new FormData(form);
+        const response = await fetch('/process', {
+          method: 'POST',
+          body: formData,
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          // Server mengembalikan error
+          showError(data.error || 'Terjadi kesalahan pada server.');
+          return;
+        }
+
+        // Simpan data perhitungan langkah-langkah secara global
+        currentStepsData = data.steps_data;
+
+        /*
+         * ── Tampilkan hasil ──────────────────────────────────
+         */
+
+        // Gambar-gambar hasil
+        document.getElementById('img-input').src = 'data:image/png;base64,' + data.source_image;
+        document.getElementById('img-ref').src = 'data:image/png;base64,' + data.ref_image;
+        document.getElementById('img-result').src = 'data:image/png;base64,' + data.result_image;
+
+        // Histogram plot
+        document.getElementById('hist-img').src = 'data:image/png;base64,' + data.histogram_plot;
+
+        // Tombol download
+        const dlBtn = document.getElementById('download-btn');
+        dlBtn.href = 'data:image/png;base64,' + data.result_image;
+
+        // Info stats (dimensi, mode warna)
+        const stats = document.getElementById('stats-row');
+        const mode = data.is_color ? 'RGB (Color)' : 'Grayscale';
+        const shape = data.result_shape;
+        const dim = shape.length === 3
+          ? `${shape[1]} × ${shape[0]} px · ${shape[2]} channel`
+          : `${shape[1]} × ${shape[0]} px`;
+
+        stats.innerHTML = `
+          <div class="stat-pill">Mode: <span>${mode}</span></div>
+          <div class="stat-pill">Ukuran Hasil: <span>${dim}</span></div>
+          <div class="stat-pill">Proses: <span>Histogram Matching ✓</span></div>
+        `;
+
+        // Tampilkan section hasil
+        resultSec.classList.add('show');
+
+        // Scroll ke hasil
+        resultSec.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+      } catch (err) {
+        showError('Gagal menghubungi server. Pastikan Flask berjalan.');
+        console.error(err);
+      } finally {
+        // Sembunyikan spinner, aktifkan kembali tombol
+        spinner.classList.remove('show');
+        processBtn.disabled = false;
+      }
+    });
+
+    /*
+     * ─────────────────────────────────────────────────
+     *  Modal Langkah-Langkah (Dinamis)
+     * ─────────────────────────────────────────────────
+     */
+    function openStepsModal() {
+      if (!currentStepsData) {
+        alert("Data perhitungan belum tersedia.");
+        return;
+      }
+      generateStepsContent();
+      document.getElementById('steps-modal').classList.add('show');
+      document.body.style.overflow = 'hidden'; // cegah scroll background
+    }
+
+    function closeStepsModal() {
+      document.getElementById('steps-modal').classList.remove('show');
+      document.body.style.overflow = 'auto'; // kembalikan scroll
+    }
+
+    function generateStepsContent() {
+      const container = document.getElementById('modal-body-content');
+      const d = currentStepsData;
+      const nkSrc = d.nk_src || d.hist_src || [];
+      const nkRef = d.nk_ref || d.hist_ref || [];
+      const nkRes = d.nk_res || d.hist_res || [];
+      
+      let html = `
+        <div style="margin-bottom: 1.5rem;">
+          <h3 style="color:var(--accent); margin-bottom:.5rem;">1. Histogram Citra Awal & Ekualisasi</h3>
+          <p style="color:var(--text-sub); font-size:0.9rem;">
+            Tabel berikut menampilkan perhitungan CDF (Cumulative Distribution Function) untuk citra awal (input).
+            <br/>Total piksel (n): <span class="math-text">${d.n_pixels_src}</span>
+          </p>
+        </div>
+        <div class="table-responsive">
+          <table class="steps-table">
+            <thead>
+              <tr>
+                <th>Level Intensitas (r_k)</th>
+                <th>Jumlah Piksel (n_k)</th>
+                <th>P_r(r_k) = n_k / n</th>
+                <th>s_k (CDF)</th>
+              </tr>
+            </thead>
+            <tbody>
+      `;
+
+      // Filter tabel agar tidak terlalu panjang, hanya tampilkan yang ada pikselnya
+      for (let k = 0; k < 256; k++) {
+        if (nkSrc[k] > 0 || k === 0 || k === 255) {
+          const pr = (nkSrc[k] / d.n_pixels_src).toFixed(4);
+          const sk = d.cdf_src[k].toFixed(4);
+          html += `
+            <tr>
+              <td>${k}</td>
+              <td>${nkSrc[k]}</td>
+              <td>${pr}</td>
+              <td class="math-text">${sk}</td>
+            </tr>
+          `;
+        }
+      }
+
+      html += `
+            </tbody>
+          </table>
+        </div>
+
+        <div style="margin-bottom: 1.5rem;">
+          <h3 style="color:var(--accent); margin-bottom:.5rem;">2. Histogram Citra Referensi & Ekualisasi</h3>
+          <p style="color:var(--text-sub); font-size:0.9rem;">
+            Tabel berikut menampilkan perhitungan CDF untuk citra referensi (target).
+            <br/>Total piksel (n): <span class="math-text">${d.n_pixels_ref}</span>
+          </p>
+        </div>
+        <div class="table-responsive">
+          <table class="steps-table">
+            <thead>
+              <tr>
+                <th>Level Intensitas (z_k)</th>
+                <th>Jumlah Piksel (n_k)</th>
+                <th>P_z(z_k)</th>
+                <th>v_k (CDF)</th>
+              </tr>
+            </thead>
+            <tbody>
+      `;
+
+      for (let k = 0; k < 256; k++) {
+        if (nkRef[k] > 0 || k === 0 || k === 255) {
+          const pz = (nkRef[k] / d.n_pixels_ref).toFixed(4);
+          const vk = d.cdf_ref[k].toFixed(4);
+          html += `
+            <tr>
+              <td>${k}</td>
+              <td>${nkRef[k]}</td>
+              <td>${pz}</td>
+              <td class="math-text">${vk}</td>
+            </tr>
+          `;
+        }
+      }
+
+      html += `
+            </tbody>
+          </table>
+        </div>
+
+        <div style="margin-bottom: 1.5rem;">
+          <h3 style="color:var(--accent); margin-bottom:.5rem;">3. Pemetaan / Transformasi (r_k → z_k)</h3>
+          <p style="color:var(--text-sub); font-size:0.9rem;">
+            Mencari nilai z_k yang nilai v_k-nya paling mendekati s_k untuk setiap r_k yang ada pikselnya.
+          </p>
+        </div>
+        <div class="table-responsive">
+          <table class="steps-table">
+            <thead>
+              <tr>
+                <th>Level Awal (r_k)</th>
+                <th>CDF Awal (s_k)</th>
+                <th>Mapped Level (z_k)</th>
+                <th>CDF Target Terdekat (v_k)</th>
+              </tr>
+            </thead>
+            <tbody>
+      `;
+
+      for (let k = 0; k < 256; k++) {
+        if (nkSrc[k] > 0) {
+          const mappedZ = d.lut[k];
+          const sk = d.cdf_src[k].toFixed(4);
+          const vk = d.cdf_ref[mappedZ].toFixed(4);
+
+          html += `
+            <tr>
+              <td>${k}</td>
+              <td class="math-text">${sk}</td>
+              <td><span class="mapping-arrow">→</span> <strong>${mappedZ}</strong></td>
+              <td class="math-text">${vk}</td>
+            </tr>
+          `;
+        }
+      }
+
+      html += `
+            </tbody>
+          </table>
+        </div>
+
+        <div style="margin-bottom: 1.5rem;">
+          <h3 style="color:var(--accent); margin-bottom:.5rem;">4. Hasil Penyebaran Piksel (Histogram Spesifikasi)</h3>
+        </div>
+        <div class="table-responsive">
+          <table class="steps-table">
+            <thead>
+              <tr>
+                <th>Level Intensitas (z_k)</th>
+                <th>Jumlah Piksel Hasil (n_k)</th>
+              </tr>
+            </thead>
+            <tbody>
+      `;
+
+      for (let k = 0; k < 256; k++) {
+        if (nkRes[k] > 0) {
+          html += `
+            <tr>
+              <td>${k}</td>
+              <td><strong>${nkRes[k]}</strong></td>
+            </tr>
+          `;
+        }
+      }
+
+      html += `
+            </tbody>
+          </table>
+        </div>
+      `;
+
+      container.innerHTML = html;
+    }
+  </script>
+
+</body>
+
+</html>
